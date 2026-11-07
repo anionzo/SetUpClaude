@@ -46,6 +46,13 @@ $Registry = Join-Path $Data 'projects.json'
 $Roles = Join-Path $Hub 'slp\roles'
 $Paseo = 'C:\Program Files\Paseo\resources\bin\paseo.cmd'
 
+function Invoke-Paseo([string[]]$argList) {
+  # Gọi paseo, gộp stderr vào output mà không để PowerShell 5.1 biến dòng stderr thành lỗi (NativeCommandError).
+  $prev = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  try { $o = & $Paseo @argList 2>&1 | ForEach-Object { "$_" } | Out-String } finally { $ErrorActionPreference = $prev }
+  return $o
+}
+
 function Find-Workspace([string]$dir) {
   # Workspace Paseo đang mở đúng thư mục $dir (không tính cái đã archive). Trả về ID hoặc $null.
   $raw = & $Paseo workspace ls --json | Out-String
@@ -71,7 +78,7 @@ function Get-SharedWorktree([string]$repo, [string]$proj, [string]$base, [bool]$
   if ($dry) { Write-Host "[DryRun] paseo workspace create --isolation worktree --path $repo --new-branch $branch --base $base --worktree-slug $slug"; return @{ Path = "<paseo worktree $slug>"; Branch = $branch; Base = $base; WorkspaceId = $null } }
   & git -C $repo show-ref --verify --quiet "refs/heads/$branch"
   $wsArgs = if ($LASTEXITCODE -eq 0) { @('--mode', 'checkout-branch', '--branch', $branch) } else { @('--mode', 'branch-off', '--new-branch', $branch, '--base', $base) }
-  $out = & $Paseo workspace create --isolation worktree --path $repo @wsArgs --worktree-slug $slug --title "SLP $proj" --json | Out-String
+  $out = Invoke-Paseo (@('workspace', 'create', '--isolation', 'worktree', '--path', $repo) + $wsArgs + @('--worktree-slug', $slug, '--title', "SLP $proj", '--json'))
   if ($LASTEXITCODE -ne 0) { throw "Paseo không tạo được worktree ${slug}: $out" }
   $ws = $out.Substring([Math]::Max(0, $out.IndexOf('{'))) | ConvertFrom-Json
   return @{ Path = ([string]$ws.cwd).TrimEnd('\'); Branch = $branch; Base = $base; WorkspaceId = $ws.workspaceId }
@@ -222,7 +229,7 @@ switch ($Cmd) {
     if ($DryRun) { Write-Host "[DryRun] paseo $($cliArgs -join ' | ')"; break }
     if ($taskText) { [IO.File]::WriteAllText($taskFile, $taskText, (New-Object Text.UTF8Encoding $false)) }
 
-    $out = & $Paseo @cliArgs | Out-String
+    $out = Invoke-Paseo $cliArgs   # paseo in "Using/Created workspace ..." ra stderr; PS 5.1 coi đó là lỗi
     if ($LASTEXITCODE -ne 0) { throw "paseo run lỗi (exit $LASTEXITCODE): $out" }
     $json = $out.Substring([Math]::Max(0, $out.IndexOf('{'))) | ConvertFrom-Json   # paseo in thêm dòng 'Created workspace ...' trước JSON
     $id = $json.agentId
