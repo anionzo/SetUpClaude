@@ -18,7 +18,7 @@
     -Provider claude|opencode|antigravity|pi  -Model <model>   (xem: paseo provider models <provider>)
     -Mode <mode>   (claude mặc định bypassPermissions)
     -Name <tên-agent>   -Wait (chờ xong rồi in báo cáo)   -DryRun (chỉ in lệnh)
-    -Worktree [-Base <nhánh>]   làm trong worktree DÙNG CHUNG của project do Paseo quản lý (slug slp-<tên>, nhánh slp/<tên>,
+    -Worktree [-Base <nhánh>]   CHỈ KHI NGƯỜI DÙNG YÊU CẦU. Mặc định agent chạy thẳng trong repo project. Worktree DÙNG CHUNG của project do Paseo quản lý (slug slp-<tên>, nhánh slp/<tên>,
                                 nằm dưới project trong sidebar Paseo),
                                 tách từ -Base (mặc định dev nếu có, không thì nhánh hiện tại). Tạo một lần, dùng lại mãi.
   MỘT project = MỘT workspace Paseo: run luôn tìm workspace đang mở đúng thư mục chạy và dùng lại; chỉ tạo mới khi

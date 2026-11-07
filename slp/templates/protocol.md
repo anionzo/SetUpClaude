@@ -21,7 +21,7 @@ Keep this file **under 40 lines**. The Lead reads it before assigning work and c
 
 ## Ownership and workspace
 - Working branches: <naming convention>; main branch: <main/master>.
-- One Paseo workspace and at most one shared worktree per project (created by Paseo inside the project via `slp.ps1 run ... -Worktree`: workspace `SLP <project>`, slug `slp-<project>`, branch `slp/<project>`; never a manual `git worktree add`); one writing Peer at a time.
+- Agents run directly in the project repo, one Paseo workspace per project, one writing Peer at a time; no worktree/branch/workspace per agent (a single Paseo-managed `-Worktree` only if the user asks).
 - Forbidden areas: <folders/files, e.g. applied migrations, secrets, production config>.
 
 ## Verification

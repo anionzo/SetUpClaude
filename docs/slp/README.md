@@ -56,13 +56,13 @@ $slp = 'D:\CODE\Supervision\slp.ps1'
 
 Nhạc trưởng sau `run`: chạy nền `paseo wait <id>`, nhận thông báo, đọc báo cáo trong `inbox/`. Các lệnh Paseo hay dùng: `paseo send <id> --prompt-file <file> --no-wait` (giao việc tiếp cho agent cũ), `paseo logs <id>`, `paseo attach <id>`, `paseo stop <id>`, `paseo archive <id>`.
 
-**Agent chạy ở đâu: MỘT workspace, MỘT worktree cho mỗi project** (người dùng chốt 2026-11-07: nhiều workspace làm sidebar Paseo rối, sau này chạy hàng trăm agent sẽ không nhìn được).
+**Agent chạy ở đâu: thẳng trong repo project, MỘT workspace Paseo cho mỗi project** (người dùng chốt 2026-11-07: nhiều workspace/worktree làm sidebar Paseo rối; worktree riêng tên `slp` làm người dùng khó theo dõi).
 - `slp.ps1 run` tìm workspace Paseo đang mở đúng thư mục chạy và **dùng lại**; chỉ tạo mới (tên `SLP <project>`) khi chưa có.
-- Không `-Worktree`: thư mục chạy là repo project.
-- Có `-Worktree [-Base <nhánh>]`: thư mục chạy là worktree **dùng chung duy nhất do Paseo tạo trong project** (`paseo workspace create --isolation worktree`, workspace `SLP <project>`, slug `slp-<project>`, nằm ở `~\.paseo\worktrees\<hash>\slp-<project>` và hiện dưới project trong sidebar), nhánh `slp/<project>`, tạo một lần từ `-Base` (mặc định `dev` nếu có, không thì nhánh hiện tại). **Không** tự `git worktree add` trong repo: Paseo sẽ hiện thư mục đó thành một project riêng. Lead và mọi Peer của project dùng chung worktree và workspace này, **mỗi lúc một Peer ghi code**.
+- **Mặc định (không `-Worktree`)**: thư mục chạy là repo project; Lead và Peer commit thẳng lên nhánh làm việc (vd. `dev`). Trong lúc agent chạy, người dùng không sửa code hay build ở đó.
+- `-Worktree [-Base <nhánh>]` **chỉ dùng khi người dùng yêu cầu**: một worktree dùng chung duy nhất do Paseo tạo trong project (`paseo workspace create --isolation worktree`, workspace `SLP <project>`, slug `slp-<project>`, nhánh `slp/<project>` từ `-Base`, mặc định `dev`). Không tự `git worktree add` trong repo: Paseo sẽ hiện thư mục đó thành một project riêng.
 - Không bao giờ tạo worktree/nhánh/workspace riêng cho từng agent. Agent xong việc, không dùng nữa thì `paseo delete` cho gọn.
 - Sau khi tạo, `slp.ps1` kiểm `cwd` agent trả về; sai thì stop và archive, không giao việc. Lý do: gọi từ trong một agent Paseo (có `PASEO_AGENT_ID`), `paseo run` gắn agent con vào workspace của agent gọi và bỏ qua `--cwd`. Vì vậy không giao việc bằng `paseo run` trực tiếp. Agent cũng tự kiểm thư mục làm việc trước khi bắt đầu; sai thì báo `BLOCKED`.
-- Lead nghiệm thu rồi merge `slp/<project>` vào nhánh làm việc của project (vd. `dev`); merge vào `main` do người dùng quyết.
+- Lead nghiệm thu ngay commit vừa vào nhánh làm việc; hỏng thì Peer sửa tiếp hoặc `git revert` trước task sau. Merge vào `main` do người dùng quyết.
 
 Agent Claude mặc định chạy `bypassPermissions` để đọc và ghi được vào Supervision nằm ngoài cwd. Muốn chặt hơn: thêm Supervision vào `permissions.additionalDirectories` rồi dùng `-Mode acceptEdits`.
 
