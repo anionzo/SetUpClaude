@@ -146,7 +146,7 @@ switch ($Cmd) {
 
     $prompt = "You are SLP $Role '$Name' for project '$Project'. " +
     "Role instructions: $Roles\$Role.md - read and follow them first. " +
-    "SLP orchestration folder for this project (inbox, reports, agents): $state - wherever the role file says 'slp/state/', use this folder. " +
+    "SLP orchestration folder for this project (inbox, reports, agents): $state - this is the 'SLP folder' your role file refers to. " +
     "Short project protocol (test commands, forbidden areas, anti-patterns): $state\protocol.md - read it once before starting. " +
     "Work in the current directory (the project repo)."
     if ($hasKnowns) {

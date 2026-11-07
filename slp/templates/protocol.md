@@ -1,35 +1,35 @@
-# Giao thức project: <tên>
-status: draft · version: 1 · reviewed: <yyyy-mm-dd> · owner: người dùng
+# Project protocol: <tên>
+status: draft · version: 1 · reviewed: <yyyy-mm-dd> · owner: user
 
-Giữ file này **dưới 40 dòng**. Lead đọc trước khi giao việc và trích các dòng liên quan vào bài giao. Peer đọc một lần khi bắt đầu.
+Keep this file **under 40 lines**. The Lead reads it before assigning work and copies the relevant lines into each assignment. Peers read it once at start. Fill it in with the user the first time; write in whichever language the user prefers.
 
-## Đặc điểm
-- Stack: <ngôn ngữ, framework, DB>
-- Nhạy cảm: <dữ liệu thật? production? người dùng thật?>
-- Knowns: <có | không>
+## Characteristics
+- Stack: <language, framework, DB>
+- Sensitivity: <real data? production? real users?>
+- Knowns: <yes | no>
 
-## Thẩm quyền
-- Người dùng quyết: contract, merge vào nhánh chính, deploy, xóa dữ liệu, chi phí lớn, đóng task `done`.
-- Lead quyết: chia việc, chọn provider/model, chấp nhận candidate.
-- Peer: chỉ trong phạm vi bài giao; vượt thì `DECISION_REQUEST`.
+## Authority
+- User decides: contract, merge into main branch, deploy, data deletion, significant cost, closing tasks as `done`.
+- Lead decides: work split, provider/model choice, candidate acceptance.
+- Peer: only within the assignment; beyond it → `DECISION_REQUEST`.
 
-## Lớp việc và định tuyến
-- Nhỏ, giới hạn rõ → Sonnet hoặc Gemini Flash; một Peer.
-- Xuyên module, nhạy lifecycle → Sonnet; review độc lập khác họ model.
-- Khóa kiến trúc → thiết kế mù 2 Peer, Lead chấm.
-- Trinh sát chỉ đọc → Haiku hoặc Flash low.
+## Task classes and routing
+- Small, clearly bounded → Sonnet or Gemini Flash; one Peer.
+- Cross-module, lifecycle-sensitive → Sonnet; independent review by a different model family.
+- Architecture lock-in → blind design with 2 Peers, Lead scores.
+- Read-only scouting → Haiku or Flash low.
 
-## Sở hữu và không gian làm
-- Nhánh làm việc: <quy ước tên nhánh>; nhánh chính: <main/master>.
-- Song song → mỗi Peer một worktree, phạm vi file không giao nhau.
-- Cấm đụng: <thư mục/file, ví dụ migrations đã chạy, secrets, config production>.
+## Ownership and workspace
+- Working branches: <naming convention>; main branch: <main/master>.
+- Parallel work → one worktree per Peer, non-overlapping file scopes.
+- Forbidden areas: <folders/files, e.g. applied migrations, secrets, production config>.
 
-## Kiểm chứng
-- Test: `<lệnh>` · Lint: `<lệnh>` · Build: `<lệnh>`
-- Báo cáo phải kèm lệnh đã chạy, exit code và output thật.
+## Verification
+- Test: `<command>` · Lint: `<command>` · Build: `<command>`
+- Reports must include the commands run, exit codes and real output.
 
-## Anti-pattern của project
-- <ví dụ: "sửa luôn chỗ thấy tiện", "tắt test đang fail", "đổi schema không có migration">
+## Project anti-patterns
+- <e.g. "fix whatever looks convenient nearby", "disable a failing test", "change schema without a migration">
 
-## Tiến hóa
-- Sửa file này: Lead đề xuất, người dùng duyệt, tăng `version` và cập nhật `reviewed`.
+## Evolution
+- Changing this file: Lead proposes, user approves, bump `version` and update `reviewed`.

@@ -1,36 +1,36 @@
-# Bài giao việc <id hoặc tên> — <project> — rev 1
-Vai: Engineer | Scout (chỉ đọc) | Reviewer (chỉ đọc) | Architect (thiết kế mù)
-Task Knowns: <id | không có>
+# Assignment <id or name> — <project> — rev 1
+Role: Engineer | Scout (read-only) | Reviewer (read-only) | Architect (blind design)
+Knowns task: <id | none>
 
-Quy tắc điền: **mọi mục phải có nội dung**; không có thì ghi "không có". Sửa bài giao thì tăng `rev`, không sửa đè.
+Rules: **every section must have content**; write "none" rather than leave it empty. To change an assignment, issue the next `rev`; never edit in place. Write the content in Vietnamese.
 
-## Mục tiêu (OUTCOME)
-<kết quả cuối cùng cần đạt, một đoạn>
+## Outcome
+<the end result to achieve, one paragraph>
 
-## Phải giữ (MUST HOLD)
-<trích từ contract, decision, protocol: những điều không được vi phạm>
+## Must hold
+<extracted from the contract, decisions and protocol: what must not be violated>
 
-## Đã quyết (DECIDED), kèm lý do
-<quyết định đã chốt mà Peer không bàn lại trong bài này>
+## Decided (with reasons)
+<decisions already settled that the Peer does not reopen in this assignment>
 
-## Chưa rõ (UNKNOWN)
-<điều Lead cũng chưa chắc; Peer được tìm hiểu và nêu trong báo cáo>
+## Unknown
+<what the Lead is also unsure about; the Peer may investigate and report>
 
-## Phạm vi
-- Được viết: <file/thư mục>
-- Chỉ đọc: <file/thư mục>
-- Dừng và hỏi (`DECISION_REQUEST`) nếu: <điều kiện, ví dụ cần sửa file ngoài phạm vi, cần đổi schema>
+## Scope
+- Write: <files/folders>
+- Read-only: <files/folders>
+- Stop and ask (`DECISION_REQUEST`) if: <conditions, e.g. needs a file outside scope, needs a schema change>
 
-## Tiêu chí chấp nhận (AC)
-1. <đo được, kiểm được>
+## Acceptance criteria
+1. <measurable, checkable>
 2. ...
 
-## Ngoài phạm vi
-<việc Peer có thể thấy nhưng không được làm trong bài này>
+## Out of scope
+<things the Peer may notice but must not do in this assignment>
 
-## Kiểm chứng
-- Lệnh: `<test>`, `<lint>`
-- Base SHA: <ghi khi bắt đầu>
+## Verification
+- Commands: `<test>`, `<lint>`
+- Base SHA: <record at start>
 
-## Trả lời
-Báo cáo 6 ô theo `peer.md`, loại `RESULT` | `CHALLENGE` | `DECISION_REQUEST` | `BLOCKED`, ghi vào `inbox\<tên-agent>-report.md`, dưới 4000 ký tự, rồi kết thúc lượt.
+## Reply
+Six-cell report as in `peer.md`, kind `RESULT` | `CHALLENGE` | `DECISION_REQUEST` | `BLOCKED`, written to `inbox\<agent-name>-report.md`, under 4000 characters, then end the turn.
