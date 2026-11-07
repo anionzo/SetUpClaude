@@ -49,7 +49,7 @@ $slp = 'D:\CODE\Supervision\slp.ps1'
 & $slp run daotao 6vtobg                    # giao task Knowns theo ID
 & $slp run piggery "sửa lỗi đăng nhập"      # project không có Knowns: việc ghi thành file task
 & $slp run daotao 6vtobg -Provider antigravity -Model gemini-3.8-flash-medium
-& $slp run dyneq SLP-HVEZZ3 -Worktree       # làm trong worktree dùng chung <repo>\.worktrees\slp (nhánh slp/dyneq, từ dev)
+& $slp run dyneq SLP-HVEZZ3 -Worktree       # làm trong worktree dùng chung do Paseo quản lý (workspace "SLP dyneq", nhánh slp/dyneq, từ dev)
 & $slp run daotao 6vtobg -Wait              # chờ xong rồi in báo cáo
 & $slp status [daotao]                      # agent SLP trên Paseo (mọi thư mục)
 ```
@@ -59,7 +59,7 @@ Nhạc trưởng sau `run`: chạy nền `paseo wait <id>`, nhận thông báo, 
 **Agent chạy ở đâu: MỘT workspace, MỘT worktree cho mỗi project** (người dùng chốt 2026-11-07: nhiều workspace làm sidebar Paseo rối, sau này chạy hàng trăm agent sẽ không nhìn được).
 - `slp.ps1 run` tìm workspace Paseo đang mở đúng thư mục chạy và **dùng lại**; chỉ tạo mới (tên `SLP <project>`) khi chưa có.
 - Không `-Worktree`: thư mục chạy là repo project.
-- Có `-Worktree [-Base <nhánh>]`: thư mục chạy là worktree **dùng chung duy nhất** `<repo>\.worktrees\slp`, nhánh `slp/<project>`, tạo một lần từ `-Base` (mặc định `dev` nếu có, không thì nhánh hiện tại); `.worktrees/` được thêm vào `.git/info/exclude`. Lead và mọi Peer của project dùng chung worktree và workspace này, **mỗi lúc một Peer ghi code**.
+- Có `-Worktree [-Base <nhánh>]`: thư mục chạy là worktree **dùng chung duy nhất do Paseo tạo trong project** (`paseo workspace create --isolation worktree`, workspace `SLP <project>`, slug `slp-<project>`, nằm ở `~\.paseo\worktrees\<hash>\slp-<project>` và hiện dưới project trong sidebar), nhánh `slp/<project>`, tạo một lần từ `-Base` (mặc định `dev` nếu có, không thì nhánh hiện tại). **Không** tự `git worktree add` trong repo: Paseo sẽ hiện thư mục đó thành một project riêng. Lead và mọi Peer của project dùng chung worktree và workspace này, **mỗi lúc một Peer ghi code**.
 - Không bao giờ tạo worktree/nhánh/workspace riêng cho từng agent. Agent xong việc, không dùng nữa thì `paseo delete` cho gọn.
 - Sau khi tạo, `slp.ps1` kiểm `cwd` agent trả về; sai thì stop và archive, không giao việc. Lý do: gọi từ trong một agent Paseo (có `PASEO_AGENT_ID`), `paseo run` gắn agent con vào workspace của agent gọi và bỏ qua `--cwd`. Vì vậy không giao việc bằng `paseo run` trực tiếp. Agent cũng tự kiểm thư mục làm việc trước khi bắt đầu; sai thì báo `BLOCKED`.
 - Lead nghiệm thu rồi merge `slp/<project>` vào nhánh làm việc của project (vd. `dev`); merge vào `main` do người dùng quyết.

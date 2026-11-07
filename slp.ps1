@@ -18,7 +18,8 @@
     -Provider claude|opencode|antigravity|pi  -Model <model>   (xem: paseo provider models <provider>)
     -Mode <mode>   (claude mặc định bypassPermissions)
     -Name <tên-agent>   -Wait (chờ xong rồi in báo cáo)   -DryRun (chỉ in lệnh)
-    -Worktree [-Base <nhánh>]   làm trong worktree DÙNG CHUNG của project: <repo>\.worktrees\slp, nhánh slp/<tên>,
+    -Worktree [-Base <nhánh>]   làm trong worktree DÙNG CHUNG của project do Paseo quản lý (slug slp-<tên>, nhánh slp/<tên>,
+                                nằm dưới project trong sidebar Paseo),
                                 tách từ -Base (mặc định dev nếu có, không thì nhánh hiện tại). Tạo một lần, dùng lại mãi.
   MỘT project = MỘT workspace Paseo: run luôn tìm workspace đang mở đúng thư mục chạy và dùng lại; chỉ tạo mới khi
   chưa có. Không bao giờ tạo worktree/workspace riêng cho từng agent.
@@ -50,28 +51,30 @@ function Find-Workspace([string]$dir) {
   $raw = & $Paseo workspace ls --json | Out-String
   if ($LASTEXITCODE -ne 0 -or -not $raw.Trim()) { return $null }
   $want = $dir.TrimEnd('\').ToLowerInvariant()
-  $hit = @($raw | ConvertFrom-Json) | Where-Object { ([string]$_.cwd).TrimEnd('\').ToLowerInvariant() -eq $want } | Select-Object -First 1
+  $hit = ($raw | ConvertFrom-Json) | ForEach-Object { $_ } | Where-Object { ([string]$_.cwd).TrimEnd('\').ToLowerInvariant() -eq $want } | Select-Object -First 1
   if ($hit) { return $hit.workspaceId } else { return $null }
 }
 
 function Get-SharedWorktree([string]$repo, [string]$proj, [string]$base, [bool]$dry) {
-  # Worktree DÙNG CHUNG duy nhất của project: <repo>\.worktrees\slp, nhánh slp/<proj>. Tạo một lần, lần sau dùng lại.
+  # Worktree DÙNG CHUNG duy nhất của project, do PASEO tạo và quản lý (nằm dưới project trong sidebar Paseo,
+  # thư mục ~\.paseo\worktrees\<hash>\slp-<proj>, nhánh slp/<proj>). KHÔNG tự tạo bằng git worktree add:
+  # Paseo sẽ coi thư mục đó là một project riêng. Có rồi thì dùng lại, chưa có mới tạo (một lần).
   if (-not (Test-Path (Join-Path $repo '.git'))) { throw "$repo chưa là git repo, không tạo worktree được." }
-  $path = Join-Path $repo '.worktrees\slp'; $branch = "slp/$proj"
+  $slug = "slp-$proj"; $branch = "slp/$proj"
   if (-not $base) {
     & git -C $repo show-ref --verify --quiet refs/heads/dev
     $base = if ($LASTEXITCODE -eq 0) { 'dev' } else { (& git -C $repo rev-parse --abbrev-ref HEAD).Trim() }
   }
-  $info = @{ Path = $path; Branch = $branch; Base = $base }
-  if (Test-Path $path) { return $info }
-  if ($dry) { Write-Host "[DryRun] git -C $repo worktree add -b $branch .worktrees\slp $base"; return $info }
-  & git -C $repo check-ignore -q .worktrees/slp            # .worktrees/ không được lọt vào git status của repo
-  if ($LASTEXITCODE -ne 0) { Add-Content (Join-Path $repo '.git\info\exclude') "`n.worktrees/" -Encoding ascii }
+  $raw = & $Paseo workspace ls --json | Out-String
+  $hit = ($raw | ConvertFrom-Json) | ForEach-Object { $_ } | Where-Object { $_.isolation -eq 'worktree' -and (Split-Path ([string]$_.cwd) -Leaf) -eq $slug } | Select-Object -First 1
+  if ($hit) { return @{ Path = ([string]$hit.cwd).TrimEnd('\'); Branch = $branch; Base = $base; WorkspaceId = $hit.workspaceId } }
+  if ($dry) { Write-Host "[DryRun] paseo workspace create --isolation worktree --path $repo --new-branch $branch --base $base --worktree-slug $slug"; return @{ Path = "<paseo worktree $slug>"; Branch = $branch; Base = $base; WorkspaceId = $null } }
   & git -C $repo show-ref --verify --quiet "refs/heads/$branch"
-  if ($LASTEXITCODE -eq 0) { & git -C $repo worktree add $path $branch | Out-Null }
-  else { & git -C $repo worktree add -b $branch $path $base | Out-Null }
-  if ($LASTEXITCODE -ne 0) { throw "Không tạo được worktree $path" }
-  return $info
+  $wsArgs = if ($LASTEXITCODE -eq 0) { @('--mode', 'checkout-branch', '--branch', $branch) } else { @('--mode', 'branch-off', '--new-branch', $branch, '--base', $base) }
+  $out = & $Paseo workspace create --isolation worktree --path $repo @wsArgs --worktree-slug $slug --title "SLP $proj" --json | Out-String
+  if ($LASTEXITCODE -ne 0) { throw "Paseo không tạo được worktree ${slug}: $out" }
+  $ws = $out.Substring([Math]::Max(0, $out.IndexOf('{'))) | ConvertFrom-Json
+  return @{ Path = ([string]$ws.cwd).TrimEnd('\'); Branch = $branch; Base = $base; WorkspaceId = $ws.workspaceId }
 }
 
 function Read-Registry {
@@ -179,10 +182,10 @@ switch ($Cmd) {
     if ($Provider -eq 'claude' -and -not $Mode) { $Mode = 'bypassPermissions' }
 
     # Thư mục chạy: repo, hoặc worktree DÙNG CHUNG của project (một cái duy nhất, tạo một lần).
-    $runDir = $projPath; $wtNote = ''
+    $runDir = $projPath; $wtNote = ''; $wtWs = $null
     if ($Worktree) {
       $wt = Get-SharedWorktree $projPath $Project $Base $DryRun.IsPresent
-      $runDir = $wt.Path
+      $runDir = $wt.Path; $wtWs = $wt.WorkspaceId
       $wtNote = " (the single shared SLP worktree of the repo, branch $($wt.Branch), based on $($wt.Base); agents use it one writer at a time)"
     }
 
@@ -212,7 +215,7 @@ switch ($Cmd) {
     if ($Mode) { $cliArgs += @('--mode', $Mode) }
     # MỘT workspace cho mỗi thư mục chạy: dùng lại cái đang mở, chỉ tạo khi chưa có. Phải chỉ định rõ, vì gọi từ
     # trong một agent Paseo thì Paseo mặc định gắn agent con vào workspace của agent gọi và BỎ QUA --cwd.
-    $wsId = Find-Workspace $runDir
+    $wsId = if ($wtWs) { $wtWs } else { Find-Workspace $runDir }
     if ($wsId) { $cliArgs += @('--workspace', $wsId) } else { $cliArgs += @('--new-workspace', 'local') }
     $cliArgs += $prompt
 
