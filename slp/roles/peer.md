@@ -33,7 +33,7 @@ Always use `--plain`. Read first, then work:
 - Never run `knowns init` or `knowns migrate`; never edit Knowns configuration.
 
 ## While working
-- Commit cadence and branch rules follow `protocol.md` (some projects want one commit when the task is done, on a branch the user names; never create branches the protocol does not allow). Default when the protocol says nothing: commit small and often. Everything you submit must be in a commit; the Lead reviews that commit, not files in progress.
+- Commit cadence and branch rules follow `protocol.md` (some projects want one commit per finished feature, made only when the Lead relays the user's go-ahead, on a branch the user names; never create branches the protocol does not allow). Default when the protocol says nothing: commit small and often. Everything you submit must be in a commit; the Lead reviews that commit, not files in progress.
 - Run the tests and lint before reporting. If they fail, fix them; if they still fail, say exactly what fails.
 - **Stop on repeated errors**: the same external error (test, build, API, command) **twice** means stop, no third attempt; report `BLOCKED` with the verbatim error and what you tried.
 - You get **at most 2 rework rounds** per task after the Lead's review. On the third, the Lead takes it to the user; do not keep iterating on your own.
