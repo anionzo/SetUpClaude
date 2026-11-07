@@ -2,7 +2,8 @@
   slp - một lệnh duy nhất để chạy SLP trên Paseo cho nhiều project.
   Kho dữ liệu (git riêng): D:\CODE\Supervision, hoặc biến SLP_HOME
     projects.json            sổ project (tên -> đường dẫn)
-    projects\<tên>\          contract, decisions, tasks, agents, inbox\, notes\ (tự tạo)
+    projects\<tên>\          protocol, agents, supervisor-notes, inbox\ (tự tạo)
+    .knowns\                 Knowns của kho: decision xuyên project; docs/task của project không có Knowns
   Hướng dẫn vai trò dùng chung: slp\roles\*.md (một bản duy nhất cho mọi project và mọi provider).
 
   .\slp.ps1 ls                                   # xem các project đã nhớ
@@ -61,9 +62,8 @@ function Get-ProjectPath($name) {
 function Initialize-State($name, [bool]$hasKnowns) {
   $state = Join-Path $Data "projects\$name"
   New-Item -ItemType Directory -Force (Join-Path $state 'inbox') | Out-Null
-  # Project có Knowns: docs/tasks/decisions nằm trong .knowns của project -> không tạo bản trùng ở đây
-  $files = if ($hasKnowns) { @('supervisor-notes.md') } else { @('contract.md', 'decisions.md', 'tasks.md', 'supervisor-notes.md') }
-  if (-not $hasKnowns) { New-Item -ItemType Directory -Force (Join-Path $state 'notes') | Out-Null }
+  # Docs/task/decision: project có Knowns -> .knowns của project; không có -> Knowns của kho ($Data). Không tạo bản trùng ở đây
+  $files = @('supervisor-notes.md')
   foreach ($f in $files) {
     $p = Join-Path $state $f
     if (-not (Test-Path $p)) { Set-Content -Path $p -Value "# $f ($name)`n" -Encoding utf8 }
@@ -154,7 +154,8 @@ switch ($Cmd) {
       "Before starting, pull relevant context with: knowns retrieve `"<topic>`" --plain (also: knowns doc list --plain, knowns doc `"<path>`" --plain). Do not copy project docs into the SLP folder."
     }
     else {
-      $prompt += " Project docs and notes (deployment info, environments, conventions): $state\notes - check them when relevant."
+      $prompt += " This project has no Knowns of its own; its docs and decisions live in the hub Knowns at $Data (tag project:$Project). " +
+      "Run from that directory: cd $Data; knowns retrieve `"$Project <topic>`" --plain; knowns decision list --plain. Read only; do not create or edit entries there."
     }
     if ($knownsTask) {
       $prompt += " Your task is Knowns task $knownsTask - read it with: knowns task $knownsTask --plain. Follow the Knowns task workflow in your role file (in-progress -> plan/notes -> check ACs -> in-review; never set done)."
