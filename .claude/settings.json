@@ -1,0 +1,6 @@
+{
+  "autoCompactWindow": 400000,
+  "worktree": {
+    "baseRef": "head"
+  }
+}
