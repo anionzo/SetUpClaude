@@ -29,6 +29,7 @@ D:\CODE\SetUpClaude\slp.ps1 run <project> <Knowns task-id | "task" | file.md> [-
 ```
 - **Large or unclear scope: scout first.** Give a cheap Peer (Haiku or Gemini Flash) a *read-only* assignment: list files, flows, touch points, risks; change nothing. Split the work from that map.
 - **One writer per scope.** Two Peers running in parallel must have non-overlapping file scopes, stated in their assignments. If that is impossible, run them sequentially.
+- **Branches and commits follow `protocol.md`.** Use `-Worktree` only where the protocol allows a branch per Peer; where the user names a single working branch, state that branch and the commit rule (e.g. one commit when done) in the assignment.
 - Write the assignment from `D:\CODE\SetUpClaude\slp\templates\assignment.md` (Outcome · Must hold · Decided · Unknown · Scope write / read-only / stop-and-ask · Acceptance criteria · Out of scope · Verification). Every section must be filled; write "none" rather than omit. For a Knowns task, put this in the task's `--plan`/description or in an attached task file. Changing an assignment means a new `rev`, not an in-place edit.
 - The command prints an agent ID. Immediately run `paseo wait <id>` **in the background**; you are notified when the Peer finishes, then read `inbox\<agent-name>-report.md`. Do not sit waiting; do not ask "done yet?".
 - Reuse a Peer for follow-up work in the same module: write the task to a file, then `paseo send <id> --prompt-file <file> --no-wait`, then `paseo wait <id>` again. A different task or a blind-design round gets a fresh agent.
