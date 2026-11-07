@@ -25,8 +25,8 @@ Prompt vai trò: `slp/roles/lead.md`, `peer.md`, `supervisor.md`. Chỉ có **m�
                     └──► Supervisor (paseo schedule, 15 phút/lần)
 
  Repo project            .knowns/  ← nguồn sự thật: docs, task, decision, memory (nếu có)
- D:\CODE\Supervision      projects.json + projects/<tên>/{agents.md, inbox/, supervisor-notes.md}
- D:\CODE\SetUpClaude     slp.ps1 + slp/roles/  (bộ công cụ)
+ D:\CODE\Supervision      slp.ps1 + slp/roles/ + slp/templates/ (bộ công cụ)
+                          projects.json + projects/<tên>/{protocol.md, agents.md, inbox/, supervisor-notes.md} + .knowns/
 ```
 
 Ba thành phần:
@@ -43,18 +43,26 @@ Ba thành phần:
 ## 3. Bắt đầu nhanh
 
 ```powershell
-$slp = 'D:\CODE\SetUpClaude\slp.ps1'
+$slp = 'D:\CODE\Supervision\slp.ps1'
 & $slp ls                                   # 8 project đã nhớ, cột Knowns cho biết project nào có .knowns
 & $slp add <tên> <đường-dẫn>                # nhớ thêm project
 & $slp run daotao 6vtobg                    # giao task Knowns theo ID
 & $slp run piggery "sửa lỗi đăng nhập"      # project không có Knowns: việc ghi thành file task
 & $slp run daotao 6vtobg -Provider antigravity -Model gemini-3.8-flash-medium
-& $slp run daotao 6vtobg -Worktree          # Peer làm trong worktree riêng (nhánh slp/<tên-agent>)
+& $slp run dyneq SLP-HVEZZ3 -Worktree       # làm trong worktree dùng chung <repo>\.worktrees\slp (nhánh slp/dyneq, từ dev)
 & $slp run daotao 6vtobg -Wait              # chờ xong rồi in báo cáo
 & $slp status [daotao]                      # agent SLP trên Paseo (mọi thư mục)
 ```
 
 Nhạc trưởng sau `run`: chạy nền `paseo wait <id>`, nhận thông báo, đọc báo cáo trong `inbox/`. Các lệnh Paseo hay dùng: `paseo send <id> --prompt-file <file> --no-wait` (giao việc tiếp cho agent cũ), `paseo logs <id>`, `paseo attach <id>`, `paseo stop <id>`, `paseo archive <id>`.
+
+**Agent chạy ở đâu: MỘT workspace, MỘT worktree cho mỗi project** (người dùng chốt 2026-11-07: nhiều workspace làm sidebar Paseo rối, sau này chạy hàng trăm agent sẽ không nhìn được).
+- `slp.ps1 run` tìm workspace Paseo đang mở đúng thư mục chạy và **dùng lại**; chỉ tạo mới (tên `SLP <project>`) khi chưa có.
+- Không `-Worktree`: thư mục chạy là repo project.
+- Có `-Worktree [-Base <nhánh>]`: thư mục chạy là worktree **dùng chung duy nhất** `<repo>\.worktrees\slp`, nhánh `slp/<project>`, tạo một lần từ `-Base` (mặc định `dev` nếu có, không thì nhánh hiện tại); `.worktrees/` được thêm vào `.git/info/exclude`. Lead và mọi Peer của project dùng chung worktree và workspace này, **mỗi lúc một Peer ghi code**.
+- Không bao giờ tạo worktree/nhánh/workspace riêng cho từng agent. Agent xong việc, không dùng nữa thì `paseo delete` cho gọn.
+- Sau khi tạo, `slp.ps1` kiểm `cwd` agent trả về; sai thì stop và archive, không giao việc. Lý do: gọi từ trong một agent Paseo (có `PASEO_AGENT_ID`), `paseo run` gắn agent con vào workspace của agent gọi và bỏ qua `--cwd`. Vì vậy không giao việc bằng `paseo run` trực tiếp. Agent cũng tự kiểm thư mục làm việc trước khi bắt đầu; sai thì báo `BLOCKED`.
+- Lead nghiệm thu rồi merge `slp/<project>` vào nhánh làm việc của project (vd. `dev`); merge vào `main` do người dùng quyết.
 
 Agent Claude mặc định chạy `bypassPermissions` để đọc và ghi được vào Supervision nằm ngoài cwd. Muốn chặt hơn: thêm Supervision vào `permissions.additionalDirectories` rồi dùng `-Mode acceptEdits`.
 
@@ -146,7 +154,7 @@ Chi phí thật nằm ở: Lead đọc quá nhiều, Peer đọc cả file lớn
 
 Lưu ý về hạn mức: agent `claude` ăn vào gói Claude của bạn; `antigravity` dùng hạn mức Google; `opencode` qua OpenRouter và `pi` với Grok trừ credit thật. Xem `paseo usage` để biết đang tiêu ở đâu. Chưa đo chi phí thực tế của từng provider trên máy này.
 
-**Auto-compact 400k đã đặt toàn cục** trong `~/.claude/settings.json` (2026-11-07), nên mọi session Claude, kể cả Peer chạy trong repo project, đều compact ở khoảng 400k. Bản trong `.claude/settings.json` của SetUpClaude giữ lại, chỉ trùng. Chỉ áp dụng cho provider `claude`; agent Gemini, GPT, Grok theo giới hạn riêng của chúng.
+**Auto-compact 400k đã đặt toàn cục** trong `~/.claude/settings.json` (2026-11-07), nên mọi session Claude, kể cả Peer chạy trong repo project, đều compact ở khoảng 400k. Bản trong `.claude/settings.json` của Supervision chỉ trùng. Chỉ áp dụng cho provider `claude`; agent Gemini, GPT, Grok theo giới hạn riêng của chúng.
 
 ## 8. Cấu hình
 
@@ -163,7 +171,7 @@ Lưu ý về hạn mức: agent `claude` ăn vào gói Claude của bạn; `anti
 |---|---|
 | Hết hạn mức hoặc rate limit khi nhiều agent chạy cùng lúc | Bắt đầu 1 Peer; Supervisor 15–30 phút một lần với model rẻ |
 | Mất thông tin khi compact | Mọi thứ quan trọng trong Knowns hoặc Supervision; vai trò yêu cầu đọc lại sau compact |
-| Peer xung đột code | `-Worktree` cho mỗi Peer; Lead merge có người duyệt |
+| Peer xung đột code | Một worktree dùng chung, mỗi lúc một Peer ghi; Lead merge có người duyệt |
 | Agent đứng chờ xin quyền | Claude dùng `bypassPermissions` (mặc định của script); hoặc `paseo attach` vào duyệt |
 | Peer tự đóng task hoặc đổi phạm vi | Vai trò cấm `done` và cấm sửa contract; Supervisor so với contract |
 

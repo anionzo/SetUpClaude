@@ -17,7 +17,11 @@
     -Role peer|supervisor|lead   (mặc định peer)
     -Provider claude|opencode|antigravity|pi  -Model <model>   (xem: paseo provider models <provider>)
     -Mode <mode>   (claude mặc định bypassPermissions)
-    -Name <tên-agent>   -Worktree   -Wait (chờ xong rồi in báo cáo)   -DryRun (chỉ in lệnh)
+    -Name <tên-agent>   -Wait (chờ xong rồi in báo cáo)   -DryRun (chỉ in lệnh)
+    -Worktree [-Base <nhánh>]   làm trong worktree DÙNG CHUNG của project: <repo>\.worktrees\slp, nhánh slp/<tên>,
+                                tách từ -Base (mặc định dev nếu có, không thì nhánh hiện tại). Tạo một lần, dùng lại mãi.
+  MỘT project = MỘT workspace Paseo: run luôn tìm workspace đang mở đúng thư mục chạy và dùng lại; chỉ tạo mới khi
+  chưa có. Không bao giờ tạo worktree/workspace riêng cho từng agent.
 #>
 param(
   [Parameter(Position = 0)][ValidateSet('ls', 'add', 'rm', 'run', 'status', 'help')][string]$Cmd = 'help',
@@ -29,6 +33,7 @@ param(
   [string]$Model,
   [string]$Mode,
   [switch]$Worktree,
+  [string]$Base,
   [switch]$Wait,
   [switch]$DryRun
 )
@@ -39,6 +44,35 @@ if (-not (Test-Path $Data)) { throw "Không thấy kho dữ liệu SLP: $Data (�
 $Registry = Join-Path $Data 'projects.json'
 $Roles = Join-Path $Hub 'slp\roles'
 $Paseo = 'C:\Program Files\Paseo\resources\bin\paseo.cmd'
+
+function Find-Workspace([string]$dir) {
+  # Workspace Paseo đang mở đúng thư mục $dir (không tính cái đã archive). Trả về ID hoặc $null.
+  $raw = & $Paseo workspace ls --json | Out-String
+  if ($LASTEXITCODE -ne 0 -or -not $raw.Trim()) { return $null }
+  $want = $dir.TrimEnd('\').ToLowerInvariant()
+  $hit = @($raw | ConvertFrom-Json) | Where-Object { ([string]$_.cwd).TrimEnd('\').ToLowerInvariant() -eq $want } | Select-Object -First 1
+  if ($hit) { return $hit.workspaceId } else { return $null }
+}
+
+function Get-SharedWorktree([string]$repo, [string]$proj, [string]$base, [bool]$dry) {
+  # Worktree DÙNG CHUNG duy nhất của project: <repo>\.worktrees\slp, nhánh slp/<proj>. Tạo một lần, lần sau dùng lại.
+  if (-not (Test-Path (Join-Path $repo '.git'))) { throw "$repo chưa là git repo, không tạo worktree được." }
+  $path = Join-Path $repo '.worktrees\slp'; $branch = "slp/$proj"
+  if (-not $base) {
+    & git -C $repo show-ref --verify --quiet refs/heads/dev
+    $base = if ($LASTEXITCODE -eq 0) { 'dev' } else { (& git -C $repo rev-parse --abbrev-ref HEAD).Trim() }
+  }
+  $info = @{ Path = $path; Branch = $branch; Base = $base }
+  if (Test-Path $path) { return $info }
+  if ($dry) { Write-Host "[DryRun] git -C $repo worktree add -b $branch .worktrees\slp $base"; return $info }
+  & git -C $repo check-ignore -q .worktrees/slp            # .worktrees/ không được lọt vào git status của repo
+  if ($LASTEXITCODE -ne 0) { Add-Content (Join-Path $repo '.git\info\exclude') "`n.worktrees/" -Encoding ascii }
+  & git -C $repo show-ref --verify --quiet "refs/heads/$branch"
+  if ($LASTEXITCODE -eq 0) { & git -C $repo worktree add $path $branch | Out-Null }
+  else { & git -C $repo worktree add -b $branch $path $base | Out-Null }
+  if ($LASTEXITCODE -ne 0) { throw "Không tạo được worktree $path" }
+  return $info
+}
 
 function Read-Registry {
   $h = [ordered]@{}
@@ -144,18 +178,26 @@ switch ($Cmd) {
 
     if ($Provider -eq 'claude' -and -not $Mode) { $Mode = 'bypassPermissions' }
 
+    # Thư mục chạy: repo, hoặc worktree DÙNG CHUNG của project (một cái duy nhất, tạo một lần).
+    $runDir = $projPath; $wtNote = ''
+    if ($Worktree) {
+      $wt = Get-SharedWorktree $projPath $Project $Base $DryRun.IsPresent
+      $runDir = $wt.Path
+      $wtNote = " (the single shared SLP worktree of the repo, branch $($wt.Branch), based on $($wt.Base); agents use it one writer at a time)"
+    }
+
     $prompt = "You are SLP $Role '$Name' for project '$Project'. " +
     "Role instructions: $Roles\$Role.md - read and follow them first. " +
     "SLP orchestration folder for this project (inbox, reports, agents): $state - this is the 'SLP folder' your role file refers to. " +
     "Short project protocol (test commands, forbidden areas, anti-patterns): $state\protocol.md - read it once before starting. " +
-    "Work in the current directory (the project repo)."
+    "Project repo: $projPath. Your working directory must be $runDir$wtNote. Work only there. First check your working directory; if it is not $runDir, do not change anything: write a BLOCKED report and end your turn. Never create another worktree, branch-per-agent or Paseo workspace."
     if ($hasKnowns) {
       $prompt += " This project uses Knowns (.knowns/) as the source of truth for docs, tasks and decisions - see the 'Knowns' section of your role file. " +
-      "Before starting, pull relevant context with: knowns retrieve `"<topic>`" --plain (also: knowns doc list --plain, knowns doc `"<path>`" --plain). Do not copy project docs into the SLP folder."
+      "Before starting, pull relevant context with: knowns retrieve 'TOPIC' --plain (also: knowns doc list --plain, knowns doc 'PATH' --plain). Do not copy project docs into the SLP folder."
     }
     else {
       $prompt += " This project has no Knowns of its own; its docs and decisions live in the hub Knowns at $Data (tag project:$Project). " +
-      "Run from that directory: cd $Data; knowns retrieve `"$Project <topic>`" --plain; knowns decision list --plain. Read only; do not create or edit entries there."
+      "Run from that directory: cd $Data; knowns retrieve '$Project TOPIC' --plain; knowns decision list --plain. Read only, except status, notes and acceptance checks of the tasks you are assigned; do not create or edit other entries there."
     }
     if ($knownsTask) {
       $prompt += " Your task is Knowns task $knownsTask - read it with: knowns task $knownsTask --plain. Follow the Knowns task workflow in your role file (in-progress -> plan/notes -> check ACs -> in-review; never set done)."
@@ -165,13 +207,13 @@ switch ($Cmd) {
 
     $cliArgs = @('run', '--no-wait', '--json', '--title', "SLP $Project $Role $Name",
       '--label', "slp=$Role", '--label', "slp-project=$Project", '--label', "slp-name=$Name",
-      '--provider', $Provider, '--cwd', $projPath)
+      '--provider', $Provider, '--cwd', $runDir)
     if ($Model) { $cliArgs += @('--model', $Model) }
     if ($Mode) { $cliArgs += @('--mode', $Mode) }
-    if ($Worktree) {
-      if (-not (Test-Path (Join-Path $projPath '.git'))) { throw "$projPath chưa là git repo, không tạo worktree được." }
-      $cliArgs += @('--new-workspace', 'worktree', '--worktree-slug', "slp-$Name", '--new-branch', "slp/$Name")
-    }
+    # MỘT workspace cho mỗi thư mục chạy: dùng lại cái đang mở, chỉ tạo khi chưa có. Phải chỉ định rõ, vì gọi từ
+    # trong một agent Paseo thì Paseo mặc định gắn agent con vào workspace của agent gọi và BỎ QUA --cwd.
+    $wsId = Find-Workspace $runDir
+    if ($wsId) { $cliArgs += @('--workspace', $wsId) } else { $cliArgs += @('--new-workspace', 'local') }
     $cliArgs += $prompt
 
     if ($DryRun) { Write-Host "[DryRun] paseo $($cliArgs -join ' | ')"; break }
@@ -179,7 +221,18 @@ switch ($Cmd) {
 
     $out = & $Paseo @cliArgs | Out-String
     if ($LASTEXITCODE -ne 0) { throw "paseo run lỗi (exit $LASTEXITCODE): $out" }
-    $id = ($out | ConvertFrom-Json).agentId
+    $json = $out.Substring([Math]::Max(0, $out.IndexOf('{'))) | ConvertFrom-Json   # paseo in thêm dòng 'Created workspace ...' trước JSON
+    $id = $json.agentId
+    # Kiểm agent chạy đúng chỗ: cwd phải đúng thư mục chạy (repo hoặc worktree dùng chung).
+    $cwd = ([string]$json.cwd).TrimEnd('\')
+    if (-not $wsId) {   # workspace mới tạo: đặt tên dễ nhìn
+      $ws = Find-Workspace $runDir
+      if ($ws) { & $Paseo workspace rename $ws "SLP $Project" | Out-Null }
+    }
+    if ($cwd -ne $runDir.TrimEnd('\')) {
+      & $Paseo stop $id | Out-Null; & $Paseo archive $id | Out-Null
+      throw "Agent $id chạy sai thư mục (cwd='$cwd', cần '$runDir'). Đã stop + archive, không giao việc."
+    }
     $taskRel = if ($knownsTask) { "knowns:$knownsTask" } elseif ($taskFile) { $taskFile.Replace("$Data\", '') } else { '' }
     Add-Content (Join-Path $state 'agents.md') ("| {0} | {1} | {2} | {3} | {4} | {5} | {6} | đang làm |" -f (Get-Date -Format 'yyyy-MM-dd HH:mm'), $Name, $Role, $Provider, $Model, $id, $taskRel) -Encoding utf8
     Write-Host "Đã tạo agent '$Name' cho '$Project' trên Paseo: $id"
