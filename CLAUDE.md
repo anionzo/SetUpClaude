@@ -5,7 +5,7 @@
 > **Quy tắc mới (người dùng chốt 2026-11-07): agent chạy thẳng trong repo project, MỘT workspace Paseo cho mỗi project.**
 > - Lead và Peer chạy trong repo project, commit thẳng lên nhánh làm việc (vd. `dev`); `slp.ps1 run` dùng lại workspace Paseo đang mở ở repo, chỉ tạo khi chưa có; kiểm `cwd` và huỷ agent nếu sai.
 > - Không tạo worktree, nhánh hay workspace riêng; `-Worktree` (một worktree do Paseo quản lý, slug `slp-<project>`) chỉ khi người dùng yêu cầu. Không tự `git worktree add`.
-> - Mỗi lúc một Peer ghi code; agent không dùng nữa thì `paseo delete` cho sidebar gọn.
+> - Mỗi lúc một Peer ghi code; **không xóa Peer** sau khi xong (không `paseo delete`): để nguyên/`paseo archive` để giữ lịch sử và dùng lại bằng `paseo send`; chỉ xóa khi người dùng bảo (chốt 2026-11-09).
 > - Không giao việc bằng `paseo run` trực tiếp: gọi từ trong một agent Paseo thì Paseo gắn agent con vào workspace của agent gọi và bỏ qua `--cwd`.
 
 Repo này chứa **bộ công cụ** của hệ SLP (Supervisor – Lead – Peer): nhiều agent độc lập chạy trên **Paseo**, điều phối bởi một session nhạc trưởng. Dữ liệu (sổ project, inbox, báo cáo) **không** nằm ở đây mà ở kho git riêng `D:\CODE\Supervision` (đổi bằng biến `SLP_HOME`).
