@@ -100,5 +100,20 @@ docs\slp\README.md       nghiên cứu, so sánh với cộng đồng, phân b�
 ## Trạng thái
 Đã chạy thử: tạo agent qua Paseo, `paseo wait` báo về nhạc trưởng, agent đọc vai trò và nộp báo cáo; `slp.ps1` với ID Knowns đúng/sai và project không Knowns (chạy khô). **Chưa chạy thử**: `run` thật với bộ prompt hiện tại, provider ngoài Claude, `-Worktree`, `paseo send`, lịch Supervisor. Chi tiết ở [docs/slp/README.md](docs/slp/README.md) mục 10.
 
-## Skill kèm theo
-- `.claude/skills/van-phong-hoc-thuat`: quy tắc văn phong học thuật tiếng Việt (đề án, luận văn, bài báo): một giọng, không tự khen, không lặp, thuật ngữ Anh–Việt, viết hoa, trích dẫn IEEE/biblatex, quy trình viết – review. Chép thư mục này vào `~/.claude/skills/` để dùng ở mọi project.
+## Skill kèm theo: bộ skill học thuật (tiếng Việt và tiếng Anh)
+Viết bằng tiếng Anh để LLM đọc dễ, ví dụ tiếng Việt giữ nguyên. Dùng được cho mọi project: chép các thư mục trong `.claude/skills/` vào `~/.claude/skills/`.
+
+| Skill | Dùng khi |
+|---|---|
+| `van-phong-hoc-thuat` | viết, chuốt văn học thuật tiếng Việt: một giọng, không tự khen, không lặp, thuật ngữ, dịch lệch, viết hoa, mẫu câu, lỗi tiếng Việt thường gặp, quy trình để LLM đọc lại rồi sửa |
+| `dich-thuat-hoc-thuat` | dịch Anh–Việt, Việt–Anh, hiệu đính bản dịch máy; thuật ngữ theo ngành; học vụ, tên riêng |
+| `trich-dan-tai-lieu` | trích dẫn và tài liệu tham khảo: IEEE, APA 7, Harvard, Vancouver, Chicago, quy ước Việt Nam, BibTeX/biblatex, Zotero |
+| `tim-va-kiem-nguon` | tìm tài liệu, kiểm nguồn có thật, trích dẫn do AI bịa, tạp chí săn mồi, bài bị thu hồi, đạo văn |
+| `tong-quan-tai-lieu` | viết tổng quan, tổng quan hệ thống (PRISMA, Kitchenham, snowballing), khoảng trống nghiên cứu |
+| `de-cuong-nghien-cuu` | đề cương luận văn/đề án, thuyết minh đề tài |
+| `trinh-bay-van-ban-hoc-thuat` | trình bày luận văn, đề án theo quy định Việt Nam (Word, LaTeX) |
+| `bao-cao-ket-qua` | thực nghiệm, thống kê, bảng biểu, LLM-as-a-judge, chuẩn báo cáo (CONSORT, PRISMA, TRIPOD+AI, checklist NeurIPS/ACL) |
+| `bai-bao-khoa-hoc` | viết, nộp, trả lời phản biện bài báo |
+| `phan-bien-khoa-hoc` | viết nhận xét phản biện bài báo, luận văn |
+| `bao-ve-luan-van` | bảo vệ luận văn/đề án, slide, trả lời hội đồng |
+| `ai-trong-hoc-thuat` | dùng AI tạo sinh đúng quy định, khai báo việc dùng AI |
