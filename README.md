@@ -99,3 +99,6 @@ docs\slp\README.md       nghiên cứu, so sánh với cộng đồng, phân b�
 
 ## Trạng thái
 Đã chạy thử: tạo agent qua Paseo, `paseo wait` báo về nhạc trưởng, agent đọc vai trò và nộp báo cáo; `slp.ps1` với ID Knowns đúng/sai và project không Knowns (chạy khô). **Chưa chạy thử**: `run` thật với bộ prompt hiện tại, provider ngoài Claude, `-Worktree`, `paseo send`, lịch Supervisor. Chi tiết ở [docs/slp/README.md](docs/slp/README.md) mục 10.
+
+## Skill kèm theo
+- `.claude/skills/van-phong-hoc-thuat`: quy tắc văn phong học thuật tiếng Việt (đề án, luận văn, bài báo): một giọng, không tự khen, không lặp, thuật ngữ Anh–Việt, viết hoa, trích dẫn IEEE/biblatex, quy trình viết – review. Chép thư mục này vào `~/.claude/skills/` để dùng ở mọi project.
